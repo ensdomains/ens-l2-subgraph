@@ -107,7 +107,7 @@ type PubkeyChanged @entity(immutable: true) {
 type TextChanged @entity(immutable: true) {
   id: Bytes!
   node: Bytes! # bytes32
-  indexedKey: String! # string
+  indexedKey: String # string
   key: String! # string
   blockNumber: BigInt!
   blockTimestamp: BigInt!

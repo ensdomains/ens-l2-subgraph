@@ -195,7 +195,7 @@ export function handleTextChanged(event: TextChangedEvent): void {
     event.transaction.hash.concatI32(event.logIndex.toI32())
   )
   entity.node = event.params.node
-  entity.indexedKey = event.params.indexedKey
+  // entity.indexedKey = event.params.indexedKey
   entity.key = event.params.key
 
   entity.blockNumber = event.block.number
