@@ -1,0 +1,8 @@
+{
+  "optimism": {
+    "L2PublicResolver": {
+      "address": "0x2D2d42a1200d8e3ACDFa45Fe58b47F45ebbbaCd6",
+      "startBlock": 74491719
+    }
+  }
+}

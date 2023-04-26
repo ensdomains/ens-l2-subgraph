@@ -1,0 +1,18 @@
+{
+  "name": "ens-l2-subgraph",
+  "license": "UNLICENSED",
+  "scripts": {
+    "codegen": "graph codegen",
+    "build": "graph build",
+    "deploy": "graph deploy --node https://api.thegraph.com/deploy/ makoto/ens-l2-subgraph",
+    "create-local": "graph create --node http://localhost:8020/ makoto/ens-l2-subgraph",
+    "remove-local": "graph remove --node http://localhost:8020/ makoto/ens-l2-subgraph",
+    "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 makoto/ens-l2-subgraph",
+    "test": "graph test"
+  },
+  "dependencies": {
+    "@graphprotocol/graph-cli": "0.47.2",
+    "@graphprotocol/graph-ts": "0.29.1"
+  },
+  "devDependencies": { "matchstick-as": "0.5.0" }
+}
