@@ -1,7 +1,27 @@
+type Domain @entity {
+  id: ID!
+  name: String
+  labelName: String
+  labelhash: Bytes
+  resolvedAddress: Bytes
+  resolver: Resolver
+}
+
+type Resolver @entity {
+  id: ID!
+  ownedNode: String
+  owner: Bytes
+  address: Bytes
+  addr: Bytes
+  contentHash: Bytes
+  texts: [String!]
+  coinTypes: [BigInt!]
+}
+
 type AddrChanged @entity(immutable: true) {
   id: Bytes!
   node: Bytes! # bytes32
-  ownedNode: Bytes! # bytes32
+  ownedNode: Bytes # bytes32
   a: Bytes! # address
   blockNumber: BigInt!
   blockTimestamp: BigInt!
@@ -11,8 +31,8 @@ type AddrChanged @entity(immutable: true) {
 type AddressChanged @entity(immutable: true) {
   id: Bytes!
   node: Bytes! # bytes32
-  ownedNode: Bytes! # bytes32
-  coinType: BigInt! # uint256
+  ownedNode: Bytes # bytes32
+  coinType: BigInt # uint256
   newAddress: Bytes! # bytes
   blockNumber: BigInt!
   blockTimestamp: BigInt!
