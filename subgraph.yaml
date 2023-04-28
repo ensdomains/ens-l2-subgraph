@@ -6,7 +6,7 @@ dataSources:
     name: L2PublicResolver
     network: mainnet
     source:
-      address: "0x7361Cbc3D789340143CFF0244D738Ae2D3B2F3c0"
+      address: "0xdbff13Fe9Cc4c93704FCb14E7575C031Bf8D64Ee"
       abi: L2PublicResolver
     mapping:
       kind: ethereum/events
