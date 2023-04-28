@@ -1,15 +1,7 @@
-type ABIChanged @entity(immutable: true) {
-  id: Bytes!
-  node: Bytes! # bytes32
-  contentType: BigInt! # uint256
-  blockNumber: BigInt!
-  blockTimestamp: BigInt!
-  transactionHash: Bytes!
-}
-
 type AddrChanged @entity(immutable: true) {
   id: Bytes!
   node: Bytes! # bytes32
+  ownedNode: Bytes! # bytes32
   a: Bytes! # address
   blockNumber: BigInt!
   blockTimestamp: BigInt!
@@ -19,86 +11,9 @@ type AddrChanged @entity(immutable: true) {
 type AddressChanged @entity(immutable: true) {
   id: Bytes!
   node: Bytes! # bytes32
+  ownedNode: Bytes! # bytes32
   coinType: BigInt! # uint256
   newAddress: Bytes! # bytes
-  blockNumber: BigInt!
-  blockTimestamp: BigInt!
-  transactionHash: Bytes!
-}
-
-type AuthorisationChanged @entity(immutable: true) {
-  id: Bytes!
-  node: Bytes! # bytes32
-  owner: Bytes! # address
-  target: Bytes! # address
-  isAuthorised: Boolean! # bool
-  blockNumber: BigInt!
-  blockTimestamp: BigInt!
-  transactionHash: Bytes!
-}
-
-type ContenthashChanged @entity(immutable: true) {
-  id: Bytes!
-  node: Bytes! # bytes32
-  hash: Bytes! # bytes
-  blockNumber: BigInt!
-  blockTimestamp: BigInt!
-  transactionHash: Bytes!
-}
-
-type DNSRecordChanged @entity(immutable: true) {
-  id: Bytes!
-  node: Bytes! # bytes32
-  name: Bytes! # bytes
-  resource: Int! # uint16
-  record: Bytes! # bytes
-  blockNumber: BigInt!
-  blockTimestamp: BigInt!
-  transactionHash: Bytes!
-}
-
-type DNSRecordDeleted @entity(immutable: true) {
-  id: Bytes!
-  node: Bytes! # bytes32
-  name: Bytes! # bytes
-  resource: Int! # uint16
-  blockNumber: BigInt!
-  blockTimestamp: BigInt!
-  transactionHash: Bytes!
-}
-
-type DNSZoneCleared @entity(immutable: true) {
-  id: Bytes!
-  node: Bytes! # bytes32
-  blockNumber: BigInt!
-  blockTimestamp: BigInt!
-  transactionHash: Bytes!
-}
-
-type InterfaceChanged @entity(immutable: true) {
-  id: Bytes!
-  node: Bytes! # bytes32
-  interfaceID: Bytes! # bytes4
-  implementer: Bytes! # address
-  blockNumber: BigInt!
-  blockTimestamp: BigInt!
-  transactionHash: Bytes!
-}
-
-type NameChanged @entity(immutable: true) {
-  id: Bytes!
-  node: Bytes! # bytes32
-  name: String! # string
-  blockNumber: BigInt!
-  blockTimestamp: BigInt!
-  transactionHash: Bytes!
-}
-
-type PubkeyChanged @entity(immutable: true) {
-  id: Bytes!
-  node: Bytes! # bytes32
-  x: Bytes! # bytes32
-  y: Bytes! # bytes32
   blockNumber: BigInt!
   blockTimestamp: BigInt!
   transactionHash: Bytes!
@@ -107,6 +22,7 @@ type PubkeyChanged @entity(immutable: true) {
 type TextChanged @entity(immutable: true) {
   id: Bytes!
   node: Bytes! # bytes32
+  ownedNode: Bytes! # bytes32
   indexedKey: String # string
   key: String! # string
   blockNumber: BigInt!

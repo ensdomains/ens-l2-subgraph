@@ -1,57 +1,29 @@
-specVersion: 0.0.5
+specVersion: 0.0.4
 schema:
   file: ./schema.graphql
 dataSources:
   - kind: ethereum
     name: L2PublicResolver
-    network: optimism
+    network: mainnet
     source:
-      address: "0x2D2d42a1200d8e3ACDFa45Fe58b47F45ebbbaCd6"
+      address: "0x7361Cbc3D789340143CFF0244D738Ae2D3B2F3c0"
       abi: L2PublicResolver
-      startBlock: 74491719
     mapping:
       kind: ethereum/events
-      apiVersion: 0.0.7
+      apiVersion: 0.0.6
       language: wasm/assemblyscript
       entities:
-        - ABIChanged
         - AddrChanged
         - AddressChanged
-        - AuthorisationChanged
-        - ContenthashChanged
-        - DNSRecordChanged
-        - DNSRecordDeleted
-        - DNSZoneCleared
-        - InterfaceChanged
-        - NameChanged
-        - PubkeyChanged
         - TextChanged
       abis:
         - name: L2PublicResolver
           file: ./abis/L2PublicResolver.json
       eventHandlers:
-        - event: ABIChanged(indexed bytes32,indexed uint256)
-          handler: handleABIChanged
-        - event: AddrChanged(indexed bytes32,address)
+        - event: AddrChanged(indexed bytes32,indexed bytes32,address)
           handler: handleAddrChanged
-        - event: AddressChanged(indexed bytes32,uint256,bytes)
+        - event: AddressChanged(indexed bytes32,indexed bytes32,uint256,bytes)
           handler: handleAddressChanged
-        - event: AuthorisationChanged(indexed bytes32,indexed address,indexed address,bool)
-          handler: handleAuthorisationChanged
-        - event: ContenthashChanged(indexed bytes32,bytes)
-          handler: handleContenthashChanged
-        - event: DNSRecordChanged(indexed bytes32,bytes,uint16,bytes)
-          handler: handleDNSRecordChanged
-        - event: DNSRecordDeleted(indexed bytes32,bytes,uint16)
-          handler: handleDNSRecordDeleted
-        - event: DNSZoneCleared(indexed bytes32)
-          handler: handleDNSZoneCleared
-        - event: InterfaceChanged(indexed bytes32,indexed bytes4,address)
-          handler: handleInterfaceChanged
-        - event: NameChanged(indexed bytes32,string)
-          handler: handleNameChanged
-        - event: PubkeyChanged(indexed bytes32,bytes32,bytes32)
-          handler: handlePubkeyChanged
-        - event: TextChanged(indexed bytes32,indexed string,string)
+        - event: TextChanged(indexed bytes32,indexed bytes32,indexed string,string,string)
           handler: handleTextChanged
       file: ./src/l-2-public-resolver.ts
