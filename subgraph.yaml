@@ -6,7 +6,7 @@ dataSources:
     name: L2PublicResolver
     network: mainnet
     source:
-      address: "0xdbff13Fe9Cc4c93704FCb14E7575C031Bf8D64Ee"
+      address: "0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1"
       abi: L2PublicResolver
     mapping:
       kind: ethereum/events
@@ -22,6 +22,8 @@ dataSources:
       eventHandlers:
         - event: AddrChanged(indexed bytes32,indexed bytes32,address)
           handler: handleAddrChanged
+        - event: NameSet(bytes,indexed bytes32)
+          handler: handleNameSet
         - event: AddressChanged(indexed bytes32,indexed bytes32,uint256,bytes)
           handler: handleAddressChanged
         - event: TextChanged(indexed bytes32,indexed bytes32,indexed string,string,string)
