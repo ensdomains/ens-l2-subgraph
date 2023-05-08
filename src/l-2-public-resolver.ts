@@ -36,14 +36,12 @@ export function handleAddrChanged(event: AddrChangedEvent): void {
   log.warning('*******handleAddrChanged2', [])
   let node = event.params.node.toHexString()
 
-  let resolver = new Resolver(
-    createResolverID(event.params.node, event.address)
-  );
-  log.warning('*******handleAddrChanged3', [])
-  resolver.address = event.address;
-  resolver.ownedNode = event.params.ownedNode.toHexString();
-  resolver.addr = event.params.a;
-  resolver.owner = event.transaction.from;
+  let resolver = createResolver(
+    event.params.node,
+    event.address,
+    event.params.ownedNode,
+    event.transaction.from
+  )
   resolver.save();
   log.warning('*******handleAddrChanged4', [])
   let domain = new Domain(createDomainID(event.params.node, event.address));
@@ -80,12 +78,12 @@ export function handleAddressChanged(event: AddressChangedEvent): void {
   log.warning('*******handleAddressChanged3', [])
   let node = event.params.node.toHexString()
 
-  let resolver = new Resolver(
-    createResolverID(event.params.node, event.address)
-  );
-  resolver.address = event.address;
-  resolver.ownedNode = event.params.ownedNode.toHexString();
-  resolver.owner = event.transaction.from;
+  let resolver = createResolver(
+    event.params.node,
+    event.address,
+    event.params.ownedNode,
+    event.transaction.from
+  )
   resolver.save();
   log.warning('*******handleAddressChanged4', [])
   let domain = new Domain(createDomainID(event.params.node, event.address));
@@ -122,12 +120,12 @@ export function handleTextChanged(event: TextChangedEvent): void {
 
   entity.save()
 
-  let resolver = new Resolver(
-    createResolverID(event.params.node, event.address)
-  );
-  resolver.address = event.address;
-  resolver.ownedNode = event.params.ownedNode.toHexString();
-  resolver.owner = event.transaction.from;
+  let resolver = createResolver(
+    event.params.node,
+    event.address,
+    event.params.ownedNode,
+    event.transaction.from
+  )
   let key = event.params.key;
   if(resolver.texts == null) {
     resolver.texts = [key];
@@ -146,6 +144,17 @@ export function handleTextChanged(event: TextChangedEvent): void {
   domain.resolver = resolver.id;
   domain.save()
 }
+
+function createResolver(node: Bytes, address: Address, ownedNode: Bytes, owner: Address): Resolver{
+  let resolver = new Resolver(
+    createResolverID(node, address)
+  );
+  resolver.address = address;
+  resolver.ownedNode = ownedNode.toHexString();
+  resolver.owner = owner
+  return resolver
+}
+
 
 function createResolverID(node: Bytes, resolver: Address): string {
   return resolver
