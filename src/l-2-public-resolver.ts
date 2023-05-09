@@ -12,7 +12,7 @@ import {
   Resolver,
   Domain
 } from "../generated/schema"
-import { Address, ByteArray, Bytes, log } from '@graphprotocol/graph-ts'
+import { Address, ByteArray, Bytes, log, crypto } from '@graphprotocol/graph-ts'
 
 export function handleNameSet(event: NameSetEvent): void { 
   let domainId = createDomainID(event.params.node, event.address);
@@ -21,10 +21,23 @@ export function handleNameSet(event: NameSetEvent): void {
     domain = new Domain(domainId)
   }
   let decoded = decodeName(event.params.name)
-  let name = decoded ? decoded[1] : ''
-  let labelName = decoded ? decoded[0] : ''
-  domain.name = name
-  domain.labelName = labelName
+  log.warning('*******decode1 {}', [event.params.name.toHexString()])
+  if(decoded){
+    
+    let labelName = decoded[0]
+    let labelHex = encodeHex(labelName)    
+    let labelhash = crypto.keccak256(byteArrayFromHex(labelHex)).toHex()
+    log.warning('*******decode2  {} {} {}', [labelName, labelHex, labelhash])
+    let name = decoded ? decoded[1] : ''
+    log.warning('*******decode3  {} ', [name])
+    let parentName = decoded ? decoded[2] : ''
+    log.warning('*******decode4  {} ', [parentName])
+    let parentEncoded = decoded ? decoded[3] : ''
+    log.warning('*******decode4  {} ', [parentEncoded])
+    domain.name = name
+    domain.labelName = labelName
+    domain.labelhash = Bytes.fromHexString(labelhash)
+  }
   domain.save()
 }
 
@@ -34,8 +47,6 @@ export function handleAddrChanged(event: AddrChangedEvent): void {
     event.transaction.hash.concatI32(event.logIndex.toI32())
   )
   log.warning('*******handleAddrChanged2', [])
-  let node = event.params.node.toHexString()
-
   let resolver = createResolver(
     event.params.node,
     event.address,
@@ -44,9 +55,12 @@ export function handleAddrChanged(event: AddrChangedEvent): void {
   )
   resolver.save();
   log.warning('*******handleAddrChanged4', [])
-  let domain = new Domain(createDomainID(event.params.node, event.address));
-  domain.resolvedAddress = event.params.a;
-  domain.resolver = resolver.id;
+  let domain = createDomain(
+    event.params.node,
+    event.address,
+    resolver.id
+  )
+  domain.resolvedAddress = event.params.a;  
   domain.save()
   log.warning('*******handleAddrChanged5', [])
   entity.node = event.params.node
@@ -76,8 +90,6 @@ export function handleAddressChanged(event: AddressChangedEvent): void {
   entity.transactionHash = event.transaction.hash
   entity.save()
   log.warning('*******handleAddressChanged3', [])
-  let node = event.params.node.toHexString()
-
   let resolver = createResolver(
     event.params.node,
     event.address,
@@ -86,8 +98,11 @@ export function handleAddressChanged(event: AddressChangedEvent): void {
   )
   resolver.save();
   log.warning('*******handleAddressChanged4', [])
-  let domain = new Domain(createDomainID(event.params.node, event.address));
-  domain.resolver = resolver.id;
+  let domain = createDomain(
+    event.params.node,
+    event.address,
+    resolver.id
+  )
   domain.save()
   log.warning('*******handleAddressChanged5', [])
   let coinType = event.params.coinType
@@ -139,9 +154,11 @@ export function handleTextChanged(event: TextChangedEvent): void {
     }
   }
   resolver.save();
-
-  let  domain = new Domain(node);
-  domain.resolver = resolver.id;
+  let domain = createDomain(
+    event.params.node,
+    event.address,
+    resolver.id
+  )
   domain.save()
 }
 
@@ -155,6 +172,12 @@ function createResolver(node: Bytes, address: Address, ownedNode: Bytes, owner: 
   return resolver
 }
 
+function createDomain(node: Bytes, address: Address, resolverId: string): Domain{
+  let domain = new Domain(createDomainID(node, address));  
+  domain.namehash = node;
+  domain.resolver = resolverId;
+  return domain
+}
 
 function createResolverID(node: Bytes, resolver: Address): string {
   return resolver
@@ -201,76 +224,78 @@ export function checkValidLabel(name: string): boolean {
   return true;
 }
 
-// function decodeName(buf: Bytes): Array<string> | null {
-//   log.warning('*******decodeName1', [])
-//   let offset = 0;
-//   let list = new ByteArray(0);
-//   let dot = Bytes.fromHexString("2e");
-//   let len = buf[offset++];
-//   let hex = buf.toHexString();
-//   let firstLabel = "";
-//   log.warning('*******decodeName2', [])
-//   if (len === 0) {
-//     return [firstLabel, "."];
-//   }
-//   log.warning('*******decodeName3', [])
-//   while (len) {
-//     log.warning('*******decodeName3.1', [])
-//     let label = hex.slice((offset + 1) * 2, (offset + 1 + len) * 2);
-//     log.warning('*******decodeName3.2', [])
-//     let labelBytes = Bytes.fromHexString(label);
-//     log.warning('*******decodeName3.3', [])
-//     if (!checkValidLabel(labelBytes.toString())) {
-//       return null;
-//     }
-//     log.warning('*******decodeName3.4', [])
-//     if (offset > 1) {
-//       log.warning('*******decodeName3.4.1', [])
-//       list = concat(list, dot);
-//     } else {
-//       log.warning('*******decodeName3.4.2', [])
-//       firstLabel = labelBytes.toString();
-//     }
-//     log.warning('*******decodeName3.5', [])
-//     list = concat(list, labelBytes);
-//     log.warning('*******decodeName3.6', [])
-//     offset += len;
-//     log.warning('*******decodeName3.7 len {} offset {}', [len.toString(), offset.toString()])
-//     let foo = buf[offset];
-//     log.warning('*******decodeName3.9 foo{}', [foo.toString()])
-//     len = buf[offset++];
-//     log.warning('*******decodeName3.10 len {}', [len.toString()])
-//   }
-//   return [firstLabel, list.toHexString()];
-// }
-
 function decodeName(buf: Bytes): Array<string> | null {
   let offset = 0;
   let list = new ByteArray(0);
+  let parent = new ByteArray(0);
   let dot = Bytes.fromHexString("2e");
   let len = buf[offset++];
   let hex = buf.toHexString();
   let firstLabel = "";
+  let parentNode = "";
   if (len === 0) {
     return [firstLabel, "."];
   }
-
+  let i = 0;
   while (len) {
+    i = i +1;
+    log.warning('*******while0 i{} o {} b {} bh {}', [i.toString(), offset.toString(), buf.toString(), buf.toHexString()])
+    log.warning('*******while1  {} ', [len.toString()])
+    log.warning('*******while2  {} ', [list.toString()])
+    log.warning('*******while3  {} ', [dot.toString()])
+
     let label = hex.slice((offset + 1) * 2, (offset + 1 + len) * 2);
+    log.warning('*******while3.1  {}', [label.toString()])
+    if(parentNode == ""){
+      parentNode = hex.slice((offset + 1 + len) * 2);
+    }
+    log.warning('*******while3.2  {}', [parentNode.toString()])
     let labelBytes = Bytes.fromHexString(label);
+    log.warning('*******while4  {} ', [labelBytes.toString()])
 
     if (!checkValidLabel(labelBytes.toString())) {
       return null;
     }
 
     if (offset > 1) {
+      log.warning('*******while4.0-  list {} parent {}', [list.toString(), parent.toString()])
+      if(parent.toString() != ''){
+        log.warning('*******while4.0--  list {} parent {}', [list.toString(), parent.toString()])
+        parent = concat(parent, dot);
+      }
       list = concat(list, dot);
+      log.warning('*******while4.0+  list {} parent {}', [list.toString(), parent.toString()])
     } else {
       firstLabel = labelBytes.toString();
+      log.warning('*******while4.1  {} ', [firstLabel])
     }
     list = concat(list, labelBytes);
+    if(labelBytes.toString() != firstLabel.toString()){
+      parent = concat(parent, labelBytes);
+    }
     offset += len;
     len = buf[offset++];
+    log.warning('*******while5 len {} list {} parent {}', [len.toString(), list.toString(), parent.toString()])
   }
-  return [firstLabel, list.toString()];
+  return [firstLabel, list.toString(), parent.toString(), parentNode.toString()];
+}
+
+export function byteArrayFromHex(s: string): ByteArray {
+  if(s.length % 2 !== 0) {
+    throw new TypeError("Hex string must have an even number of characters")
+  }
+  let out = new Uint8Array(s.length / 2)
+  for(var i = 0; i < s.length; i += 2) {
+    out[i / 2] = parseInt(s.substring(i, i + 2), 16) as u32
+  }
+  return changetype<ByteArray>(out)
+}
+
+export function encodeHex(data: string): string {
+  const array = Uint8Array.wrap(String.UTF8.encode(data))
+  let hex = ''
+  for (let i = 0; i < array.length; i++) {
+      hex += array[i].toString(16)
+  }
+  return hex
 }
