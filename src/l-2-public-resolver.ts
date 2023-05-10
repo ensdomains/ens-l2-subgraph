@@ -12,7 +12,7 @@ import {
   Resolver,
   Domain
 } from "../generated/schema"
-import { Address, ByteArray, Bytes, log, crypto } from '@graphprotocol/graph-ts'
+import { Address, ByteArray, Bytes, log, crypto, ens } from '@graphprotocol/graph-ts'
 
 export function handleNameSet(event: NameSetEvent): void { 
   let domainId = createDomainID(event.params.node, event.address);
@@ -33,10 +33,42 @@ export function handleNameSet(event: NameSetEvent): void {
     let parentName = decoded ? decoded[2] : ''
     log.warning('*******decode4  {} ', [parentName])
     let parentEncoded = decoded ? decoded[3] : ''
-    log.warning('*******decode4  {} ', [parentEncoded])
+    log.warning('*******decode5  {} ', [parentEncoded])
+    let foo = namehash(event.params.name)
+    log.warning('*******decode6  {} ', [foo.toHexString()])
+    let parentNode = namehash(Bytes.fromHexString(parentEncoded))
+    log.warning('*******decode7  {} ', [parentNode.toHexString()])
     domain.name = name
     domain.labelName = labelName
     domain.labelhash = Bytes.fromHexString(labelhash)
+    let parentDomainId = createDomainID(parentNode, event.address);
+    let parentDomain = createDomain(
+      parentNode,
+      event.address
+    )
+    parentDomain.save()
+    domain.parent = parentDomainId
+    if(parentDomain.name == null){
+      let decodedParent = decodeName(Bytes.fromHexString(parentEncoded))
+      let parentLabelName = decoded[0]
+      let parentLabelHex = encodeHex(parentLabelName)
+      let parentLabelhash = crypto.keccak256(byteArrayFromHex(parentLabelHex)).toHex()
+      log.warning('*******decode8  {} {} {}', [parentLabelName, parentLabelHex, parentLabelhash])
+      let parentName = decodedParent ? decodedParent[1] : ''
+      parentDomain.name = parentName
+      parentDomain.labelName = parentLabelName
+      log.warning('*******decode8.1  {}', [parentName])
+      parentDomain.labelhash = Bytes.fromHexString(parentLabelhash)
+    }else{
+      let parentDomainName = parentDomain.name
+      if(parentDomainName){
+        log.warning('*******decode9  {} ', [parentDomainName.toString()])
+      }else{
+        log.warning('*******decode9.1  should not happen ', [])
+      }
+    }
+    log.warning('*******decode10  {} ', [parentDomainId])
+    parentDomain.save()
   }
   domain.save()
 }
@@ -172,10 +204,12 @@ function createResolver(node: Bytes, address: Address, ownedNode: Bytes, owner: 
   return resolver
 }
 
-function createDomain(node: Bytes, address: Address, resolverId: string): Domain{
+function createDomain(node: Bytes, address: Address, resolverId: string = ''): Domain{
   let domain = new Domain(createDomainID(node, address));  
   domain.namehash = node;
-  domain.resolver = resolverId;
+  if(resolverId != ''){
+    domain.resolver = resolverId;
+  }
   return domain
 }
 
@@ -223,6 +257,94 @@ export function checkValidLabel(name: string): boolean {
 
   return true;
 }
+
+function makeSubnode(node: Bytes, label: Bytes): string {
+  return crypto.keccak256(concat(node, label)).toHexString()
+}
+
+export function namehash(buf: Bytes): Bytes {
+  log.warning('*******namehash:buf {} buf hex{}', [buf.toString(), buf.toHexString()])
+  let offset = 0;
+
+  let hashlength = 64;
+  let list = new ByteArray(0);
+  let list2 = new ByteArray(0);
+  let list3 = new ByteArray(0);
+  let parent = new ByteArray(0);
+  let dot = Bytes.fromHexString("2e");
+  let len = buf[offset++];
+  let hex = buf.toHexString();
+  let firstLabel = "";
+  let nodehash = '0000000000000000000000000000000000000000000000000000000000000000'
+  let n = 0
+  while (len) {
+    n = n + 1
+    log.warning('*******namehash0 offset {} ', [offset.toString()])
+    log.warning('*******namehash1 len    {} ', [len.toString()])
+    log.warning('*******namehash2 list   {} ', [list.toString()])
+    log.warning('*******namehash3 dot    {} ', [dot.toString()])
+
+    let label = hex.slice((offset + 1) * 2, (offset + 1 + len) * 2);
+    log.warning('*******namehash3.1  {}', [label.toString()])
+    
+    // if(parentNode == ""){
+    //   parentNode = hex.slice((offset + 1 + len) * 2);
+    // }
+    // log.warning('*******while3.2  {}', [parentNode.toString()])
+    let labelBytes = Bytes.fromHexString(label);
+    log.warning('*******namehash3.2  {}', [labelBytes.toString()])
+    // log.warning('*******while4  {} ', [labelBytes.toString()])
+
+    // if (!checkValidLabel(labelBytes.toString())) {
+    //   return null;
+    // }
+
+    if (offset > 1) {
+    //   log.warning('*******while4.0-  list {} parent {}', [list.toString(), parent.toString()])
+    //   if(parent.toString() != ''){
+    //     log.warning('*******while4.0--  list {} parent {}', [list.toString(), parent.toString()])
+    //     parent = concat(parent, dot);
+    //   }
+      list = concat(list, dot);
+      // list2 = concat(dot, list);
+    //   log.warning('*******while4.0+  list {} parent {}', [list.toString(), parent.toString()])
+    } else {
+    //   firstLabel = labelBytes.toString();
+    //   log.warning('*******while4.1  {} ', [firstLabel])
+    }
+    list = concat(list, labelBytes);
+    list2 = concat(labelBytes, list2);
+    let labelhash = crypto.keccak256(labelBytes);
+    list3 = concat(labelhash, list3);
+    log.warning('*******namehash4.1  {}', [list2.toString()])
+    log.warning('*******namehash4.2  {}, {}', [labelhash.toHexString(), labelhash.toHexString().length.toString()])
+    log.warning('*******namehash4.3  {}', [list3.toHexString()])
+    // if(labelBytes.toString() != firstLabel.toString()){
+    //   parent = concat(parent, labelBytes);
+    // }
+    offset += len;
+    len = buf[offset++];
+    // log.warning('*******while5 len {} list {} parent {}', [len.toString(), list.toString(), parent.toString()])
+  }
+  let j = 0
+  let bar = list3.toHexString().slice(0,66)
+  log.warning('*******namehash5.1  n {} bar {}', [n.toString(), bar])
+  let offset2 = 2;
+  while(j < n){
+    j = j + 1
+
+    log.warning('*******namehash5.2 s {} e {}', [offset2.toString(), (offset2 + hashlength).toString()])
+    let l = list3.toHexString().slice(offset2, offset2 + hashlength);
+    log.warning('*******namehash5.3 n {} l {}', [nodehash.toString(), l])
+    nodehash = makeSubnode(Bytes.fromHexString(nodehash), Bytes.fromHexString(l));
+    log.warning('*******namehash5.4 new nodehash {}', [nodehash])
+    offset2 = offset2 + hashlength;
+    
+  }
+  // return changetype<Bytes>(nodehash);
+  return Bytes.fromHexString(nodehash);
+}
+
 
 function decodeName(buf: Bytes): Array<string> | null {
   let offset = 0;

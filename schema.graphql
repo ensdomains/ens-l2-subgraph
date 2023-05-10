@@ -5,6 +5,7 @@ type Domain @entity {
   labelName: String
   labelhash: Bytes
   resolvedAddress: Bytes
+  parent: Domain
   resolver: Resolver
 }
 
