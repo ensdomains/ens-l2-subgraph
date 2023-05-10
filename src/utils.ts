@@ -4,8 +4,7 @@ export function namehash(buf: Bytes): Bytes {
     let offset = 0;
     let hashlength = 64;
     let list = new ByteArray(0);
-    let list2 = new ByteArray(0);
-    let list3 = new ByteArray(0);
+    let reverseList = new ByteArray(0);
     let dot = Bytes.fromHexString("2e");
     let len = buf[offset++];
     let hex = buf.toHexString();
@@ -16,12 +15,11 @@ export function namehash(buf: Bytes): Bytes {
         let label = hex.slice((offset + 1) * 2, (offset + 1 + len) * 2);
         let labelBytes = Bytes.fromHexString(label);
         if (offset > 1) {
-        list = concat(list, dot);
+            list = concat(list, dot);
         }
         list = concat(list, labelBytes);
-        list2 = concat(labelBytes, list2);
         let labelhash = crypto.keccak256(labelBytes);
-        list3 = concat(labelhash, list3);
+        reverseList = concat(labelhash, reverseList);
         offset += len;
         len = buf[offset++];
     }
@@ -30,7 +28,7 @@ export function namehash(buf: Bytes): Bytes {
     while(j < n){
         j = j + 1
 
-        let l = list3.toHexString().slice(offset2, offset2 + hashlength);
+        let l = reverseList.toHexString().slice(offset2, offset2 + hashlength);
         nodehash = makeSubnode(Bytes.fromHexString(nodehash), Bytes.fromHexString(l));
         offset2 = offset2 + hashlength;    
     }
@@ -54,24 +52,24 @@ export function decodeName(buf: Bytes): Array<string> | null {
         i = i +1;
         let label = hex.slice((offset + 1) * 2, (offset + 1 + len) * 2);
         if(parentNode == ""){
-        parentNode = hex.slice((offset + 1 + len) * 2);
+            parentNode = hex.slice((offset + 1 + len) * 2);
         }
         let labelBytes = Bytes.fromHexString(label);
         if (!checkValidLabel(labelBytes.toString())) {
-        return null;
+            return null;
         }
 
         if (offset > 1) {
-        if(parent.toString() != ''){
-            parent = concat(parent, dot);
-        }
-        list = concat(list, dot);
+            if(parent.toString() != ''){
+                parent = concat(parent, dot);
+            }
+            list = concat(list, dot);
         } else {
-        firstLabel = labelBytes.toString();
+            firstLabel = labelBytes.toString();
         }
         list = concat(list, labelBytes);
         if(labelBytes.toString() != firstLabel.toString()){
-        parent = concat(parent, labelBytes);
+            parent = concat(parent, labelBytes);
         }
         offset += len;
         len = buf[offset++];
@@ -119,14 +117,14 @@ export function checkValidLabel(name: string): boolean {
     for (let i = 0; i < name.length; i++) {
         let c = name.charCodeAt(i);
         if (c === 0) {
-        log.warning("Invalid label '{}' contained null byte. Skipping.", [name]);
-        return false;
+            log.warning("Invalid label '{}' contained null byte. Skipping.", [name]);
+            return false;
         } else if (c === 46) {
-        log.warning(
-            "Invalid label '{}' contained separator char '.'. Skipping.",
-            [name]
-        );
-        return false;
+            log.warning(
+                "Invalid label '{}' contained separator char '.'. Skipping.",
+                [name]
+            );
+            return false;
         }
     }
     return true;
