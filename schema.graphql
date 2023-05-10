@@ -6,6 +6,7 @@ type Domain @entity {
   labelhash: Bytes
   resolvedAddress: Bytes
   parent: Domain
+  subdomains: [Domain!]! @derivedFrom(field: "parent") # Can count domains from length of array
   resolver: Resolver
 }
 

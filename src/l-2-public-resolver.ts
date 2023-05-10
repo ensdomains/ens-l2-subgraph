@@ -22,8 +22,7 @@ export function handleNameSet(event: NameSetEvent): void {
   }
   let decoded = decodeName(event.params.name)
   log.warning('*******decode1 {}', [event.params.name.toHexString()])
-  if(decoded){
-    
+  if(decoded){    
     let labelName = decoded[0]
     let labelHex = encodeHex(labelName)    
     let labelhash = crypto.keccak256(byteArrayFromHex(labelHex)).toHex()
@@ -34,8 +33,6 @@ export function handleNameSet(event: NameSetEvent): void {
     log.warning('*******decode4  {} ', [parentName])
     let parentEncoded = decoded ? decoded[3] : ''
     log.warning('*******decode5  {} ', [parentEncoded])
-    let foo = namehash(event.params.name)
-    log.warning('*******decode6  {} ', [foo.toHexString()])
     let parentNode = namehash(Bytes.fromHexString(parentEncoded))
     log.warning('*******decode7  {} ', [parentNode.toHexString()])
     domain.name = name
@@ -50,14 +47,15 @@ export function handleNameSet(event: NameSetEvent): void {
     domain.parent = parentDomainId
     if(parentDomain.name == null){
       let decodedParent = decodeName(Bytes.fromHexString(parentEncoded))
-      let parentLabelName = decoded[0]
+      let parentLabelName = decodedParent ? decodedParent[0] : ''
       let parentLabelHex = encodeHex(parentLabelName)
       let parentLabelhash = crypto.keccak256(byteArrayFromHex(parentLabelHex)).toHex()
-      log.warning('*******decode8  {} {} {}', [parentLabelName, parentLabelHex, parentLabelhash])
+      log.warning('*******decode8  {}', [parentLabelName])
       let parentName = decodedParent ? decodedParent[1] : ''
+      let parentParentName = decodedParent ? decodedParent[2] : ''
       parentDomain.name = parentName
       parentDomain.labelName = parentLabelName
-      log.warning('*******decode8.1  {}', [parentName])
+      log.warning('*******decode8.1 0 {} 1 {} 2 {}', [parentLabelName, parentName, parentParentName])
       parentDomain.labelhash = Bytes.fromHexString(parentLabelhash)
     }else{
       let parentDomainName = parentDomain.name
@@ -414,6 +412,15 @@ export function byteArrayFromHex(s: string): ByteArray {
 }
 
 export function encodeHex(data: string): string {
+  const array = Uint8Array.wrap(String.UTF8.encode(data))
+  let hex = ''
+  for (let i = 0; i < array.length; i++) {
+      hex += array[i].toString(16)
+  }
+  return hex
+}
+
+export function encodeHex2(data: string): string {
   const array = Uint8Array.wrap(String.UTF8.encode(data))
   let hex = ''
   for (let i = 0; i < array.length; i++) {
