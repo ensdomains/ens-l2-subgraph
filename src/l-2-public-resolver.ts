@@ -12,7 +12,7 @@ import {
   Resolver,
   Domain
 } from "../generated/schema"
-import { Address, Bytes, crypto } from '@graphprotocol/graph-ts'
+import { Address, Bytes, crypto, log } from '@graphprotocol/graph-ts'
 import {
   decodeName,
   namehash,
@@ -32,9 +32,9 @@ export function handleNameSet(event: NameSetEvent): void {
     let labelHex = encodeHex(labelName)    
     let labelhash = crypto.keccak256(byteArrayFromHex(labelHex)).toHex()
     let name = decoded ? decoded[1] : ''
-    let parentName = decoded ? decoded[2] : ''
     let parentEncoded = decoded ? decoded[3] : ''
     let parentNode = namehash(Bytes.fromHexString(parentEncoded))
+    log.warning("*** handleNameSet {}", [name])
     domain.name = name
     domain.labelName = labelName
     domain.labelhash = Bytes.fromHexString(labelhash)
@@ -62,6 +62,7 @@ export function handleNameSet(event: NameSetEvent): void {
 }
 
 export function handleAddrChanged(event: AddrChangedEvent): void {
+  log.warning("*** handleAddrChanged", [])
   let entity = new AddrChanged(
     event.transaction.hash.concatI32(event.logIndex.toI32())
   )
