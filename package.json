@@ -4,10 +4,10 @@
   "scripts": {
     "codegen": "graph codegen",
     "build": "graph build",
-    "deploy": "graph deploy --node https://api.thegraph.com/deploy/ makoto/ens-l2-subgraph",
-    "create-local": "graph create --node http://localhost:8020/ makoto/ens-l2-subgraph",
-    "remove-local": "graph remove --node http://localhost:8020/ makoto/ens-l2-subgraph",
-    "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 makoto/ens-l2-subgraph",
+    "deploy": "graph deploy --node https://api.thegraph.com/deploy/ ensdomains/ens-l2-subgraph",
+    "create-local": "graph create --node http://localhost:8020/ ensdomains/ens-l2-subgraph",
+    "remove-local": "graph remove --node http://localhost:8020/ ensdomains/ens-l2-subgraph",
+    "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 ensdomains/ens-l2-subgraph",
     "test": "graph test"
   },
   "dependencies": {

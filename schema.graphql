@@ -9,6 +9,7 @@ type Domain @entity {
   subdomains: [Domain!]! @derivedFrom(field: "parent") # Can count domains from length of array
   offchain: Offchain
   resolver: Resolver
+  expiryDate: BigInt
 }
 
 type Resolver @entity {
