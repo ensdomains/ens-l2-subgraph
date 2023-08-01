@@ -19,12 +19,10 @@ dataSources:
         - name: L2PublicResolver
           file: ./abis/L2PublicResolver.json
       eventHandlers:
-        - event: AddrChanged(indexed bytes32,indexed bytes32,address)
+        - event: AddrChanged(bytes,bytes,indexed bytes32,address)
           handler: handleAddrChanged
-        - event: NameSet(bytes,indexed bytes32)
-          handler: handleNameSet
-        - event: AddressChanged(indexed bytes32,indexed bytes32,uint256,bytes)
+        - event: AddressChanged(bytes,bytes,indexed bytes32,uint256,bytes)
           handler: handleAddressChanged
-        - event: TextChanged(indexed bytes32,indexed bytes32,indexed string,string,string)
+        - event: TextChanged(bytes,bytes,indexed bytes32,indexed string,string,string)
           handler: handleTextChanged
       file: ./src/l-2-public-resolver.ts

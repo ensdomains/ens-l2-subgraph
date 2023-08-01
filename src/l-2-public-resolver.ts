@@ -2,7 +2,7 @@ import {
   AddrChanged as AddrChangedEvent,
   AddressChanged as AddressChangedEvent,
   TextChanged as TextChangedEvent,
-  NameSet as NameSetEvent
+  // NameSet as NameSetEvent
 } from "../generated/L2PublicResolver/L2PublicResolver"
 
 import {
@@ -21,13 +21,14 @@ import {
   encodeHex
 } from './utils'
 
-export function handleNameSet(event: NameSetEvent): void { 
-  let domainId = createDomainID(event.params.node, event.address);
+export function handleName(node:Bytes, context:Address, dnsName:Bytes): void { 
+  let domainId = createDomainID(node, context);
   let domain = Domain.load(domainId);
   if(!domain){
     domain = new Domain(domainId)
   }
-  let decoded = decodeName(event.params.name)
+  log.warning("*** handleName1 {}", [domainId])
+  let decoded = decodeName(dnsName)
   if(decoded){    
     let labelName = decoded[0]
     let labelHex = encodeHex(labelName)    
@@ -35,14 +36,14 @@ export function handleNameSet(event: NameSetEvent): void {
     let name = decoded ? decoded[1] : ''
     let parentEncoded = decoded ? decoded[3] : ''
     let parentNode = namehash(Bytes.fromHexString(parentEncoded))
-    log.warning("*** handleNameSet {}", [name])
+    log.warning("*** handleName2 {}", [name])
     domain.name = name
     domain.labelName = labelName
     domain.labelhash = Bytes.fromHexString(labelhash)
-    let parentDomainId = createDomainID(parentNode, event.address);
+    let parentDomainId = createDomainID(parentNode, context);
     let parentDomain = createDomain(
       parentNode,
-      event.address
+      context
     )
     parentDomain.save()
     domain.parent = parentDomainId
@@ -63,39 +64,51 @@ export function handleNameSet(event: NameSetEvent): void {
 }
 
 export function handleAddrChanged(event: AddrChangedEvent): void {
-  log.warning("*** handleAddrChanged", [])
+  log.warning("*** handleAddrChanged1", [])
   let entity = new AddrChanged(
     event.transaction.hash.concatI32(event.logIndex.toI32())
   )
+  log.warning("*** handleAddrChanged2", [])
   let resolver = createResolver(
     event.params.node,
     event.address,
-    event.params.ownedNode,
     event.transaction.from
   )
+  log.warning("*** handleAddrChanged3", [])
+  resolver.addr = event.params.a;
   resolver.save();
+  log.warning("*** handleAddrChanged4", [])
   let domain = createDomain(
     event.params.node,
     event.address,
     resolver.id
   )
-  domain.resolvedAddress = event.params.a;  
+  log.warning("*** handleAddrChanged5", [])
+  domain.resolvedAddress = event.params.a;
+  domain.save()
+  handleName(event.params.node, event.address, event.params.name)
+  log.warning("*** handleAddrChanged5.1", [])
+  entity.context = event.params.context
+  entity.name = event.params.name
   entity.node = event.params.node
   entity.a = event.params.a
 
   entity.blockNumber = event.block.number
   entity.blockTimestamp = event.block.timestamp
   entity.transactionHash = event.transaction.hash
-
+  log.warning("*** handleAddrChanged6", [])
   entity.save()
+  log.warning("*** handleAddrChanged7", [])
 }
 
 export function handleAddressChanged(event: AddressChangedEvent): void {
+  log.warning("*** handleAddressChanged", [])
   let entity = new AddressChanged(
     event.transaction.hash.concatI32(event.logIndex.toI32())
   )
   entity.node = event.params.node
-  entity.ownedNode = event.params.ownedNode
+  entity.context = event.params.context
+  entity.name = event.params.name
   entity.coinType = event.params.coinType
   entity.newAddress = event.params.newAddress
   entity.blockNumber = event.block.number
@@ -105,7 +118,6 @@ export function handleAddressChanged(event: AddressChangedEvent): void {
   let resolver = createResolver(
     event.params.node,
     event.address,
-    event.params.ownedNode,
     event.transaction.from
   )
   resolver.save();
@@ -130,12 +142,14 @@ export function handleAddressChanged(event: AddressChangedEvent): void {
 }
 
 export function handleTextChanged(event: TextChangedEvent): void {
+  log.warning("*** handleTextChanged", [])
   let node = event.params.node.toHexString();
   let entity = new TextChanged(
     event.transaction.hash.concatI32(event.logIndex.toI32())
   )
   entity.node = event.params.node
-  entity.ownedNode = event.params.ownedNode
+  entity.context = event.params.context
+  entity.name = event.params.name
   entity.key = event.params.key
 
   entity.blockNumber = event.block.number
@@ -147,7 +161,6 @@ export function handleTextChanged(event: TextChangedEvent): void {
   let resolver = createResolver(
     event.params.node,
     event.address,
-    event.params.ownedNode,
     event.transaction.from
   )
   let key = event.params.key;
@@ -171,12 +184,11 @@ export function handleTextChanged(event: TextChangedEvent): void {
   domain.save()
 }
 
-function createResolver(node: Bytes, address: Address, ownedNode: Bytes, owner: Address): Resolver{
+function createResolver(node: Bytes, address: Address, owner: Address): Resolver{
   let resolver = new Resolver(
     createResolverID(node, address)
   );
   resolver.address = address;
-  resolver.ownedNode = ownedNode.toHexString();
   resolver.owner = owner
   return resolver
 }
