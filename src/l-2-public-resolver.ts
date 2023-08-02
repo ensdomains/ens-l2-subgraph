@@ -76,6 +76,7 @@ export function handleAddrChanged(event: AddrChangedEvent): void {
   )
   log.warning("*** handleAddrChanged3", [])
   resolver.addr = event.params.a;
+  resolver.domain = createDomainID(event.params.node, event.params.context)
   resolver.save();
   log.warning("*** handleAddrChanged4", [])
   let domain = createDomain(

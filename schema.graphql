@@ -17,6 +17,7 @@ type Resolver @entity {
   node: Bytes
   context: Bytes
   address: Bytes
+  domain: Domain
   addr: Bytes
   contentHash: Bytes
   texts: [String!]
