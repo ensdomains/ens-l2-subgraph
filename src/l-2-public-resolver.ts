@@ -21,7 +21,7 @@ import {
   encodeHex
 } from './utils'
 
-export function handleName(node:Bytes, context:Address, dnsName:Bytes): void { 
+export function handleName(node:Bytes, context:Bytes, dnsName:Bytes): void { 
   let domainId = createDomainID(node, context);
   let domain = Domain.load(domainId);
   if(!domain){
@@ -68,11 +68,11 @@ export function handleAddrChanged(event: AddrChangedEvent): void {
   let entity = new AddrChanged(
     event.transaction.hash.concatI32(event.logIndex.toI32())
   )
-  log.warning("*** handleAddrChanged2", [])
+  log.warning("*** handleAddrChanged2, {}", [event.params.node.toHexString()])
   let resolver = createResolver(
     event.params.node,
+    event.params.context,
     event.address,
-    event.transaction.from
   )
   log.warning("*** handleAddrChanged3", [])
   resolver.addr = event.params.a;
@@ -80,13 +80,13 @@ export function handleAddrChanged(event: AddrChangedEvent): void {
   log.warning("*** handleAddrChanged4", [])
   let domain = createDomain(
     event.params.node,
-    event.address,
+    event.params.context,
     resolver.id
   )
   log.warning("*** handleAddrChanged5", [])
   domain.resolvedAddress = event.params.a;
   domain.save()
-  handleName(event.params.node, event.address, event.params.name)
+  handleName(event.params.node, event.params.context, event.params.name)
   log.warning("*** handleAddrChanged5.1", [])
   entity.context = event.params.context
   entity.name = event.params.name
@@ -117,16 +117,17 @@ export function handleAddressChanged(event: AddressChangedEvent): void {
   entity.save()
   let resolver = createResolver(
     event.params.node,
+    event.params.context,
     event.address,
-    event.transaction.from
   )
   resolver.save();
   let domain = createDomain(
     event.params.node,
-    event.address,
+    event.params.context,
     resolver.id
   )
   domain.save()
+  handleName(event.params.node, event.params.context, event.params.name)
   let coinType = event.params.coinType
   if(resolver.coinTypes == null) {
     resolver.coinTypes = [coinType];
@@ -147,6 +148,7 @@ export function handleTextChanged(event: TextChangedEvent): void {
   let entity = new TextChanged(
     event.transaction.hash.concatI32(event.logIndex.toI32())
   )
+  handleName(event.params.node, event.params.context, event.params.name)
   entity.node = event.params.node
   entity.context = event.params.context
   entity.name = event.params.name
@@ -160,8 +162,8 @@ export function handleTextChanged(event: TextChangedEvent): void {
 
   let resolver = createResolver(
     event.params.node,
+    event.params.context,
     event.address,
-    event.transaction.from
   )
   let key = event.params.key;
   if(resolver.texts == null) {
@@ -178,23 +180,23 @@ export function handleTextChanged(event: TextChangedEvent): void {
   resolver.save();
   let domain = createDomain(
     event.params.node,
-    event.address,
+    event.params.context,
     resolver.id
   )
   domain.save()
 }
 
-function createResolver(node: Bytes, address: Address, owner: Address): Resolver{
+function createResolver(node: Bytes, context: Bytes, address: Address): Resolver{
   let resolver = new Resolver(
-    createResolverID(node, address)
+    createResolverID(node, context, address)
   );
+  resolver.context = context
   resolver.address = address;
-  resolver.owner = owner
   return resolver
 }
 
-function createDomain(node: Bytes, address: Address, resolverId: string = ''): Domain{
-  let domain = new Domain(createDomainID(node, address));  
+function createDomain(node: Bytes, context: Bytes, resolverId: string = ''): Domain{
+  let domain = new Domain(createDomainID(node, context));  
   domain.namehash = node;
   if(resolverId != ''){
     domain.resolver = resolverId;
@@ -216,15 +218,22 @@ function createDomain(node: Bytes, address: Address, resolverId: string = ''): D
   return domain
 }
 
-function createResolverID(node: Bytes, resolver: Address): string {
+function createResolverID(node: Bytes, context: Bytes, resolver: Address): string {
   return resolver
     .toHexString()
     .concat("-")
-    .concat(node.toHexString());
+    .concat(
+      context
+      .toHexString()
+      .concat("-")
+      .concat(
+        node.toHexString()
+      )
+    );
 }
 
-function createDomainID(node: Bytes, resolver: Address): string {
-  return resolver
+function createDomainID(node: Bytes, context: Bytes): string {
+  return context
     .toHexString()
     .concat("-")
     .concat(node.toHexString());

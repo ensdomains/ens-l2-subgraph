@@ -15,7 +15,7 @@ type Domain @entity {
 type Resolver @entity {
   id: ID!
   node: Bytes
-  owner: Bytes
+  context: Bytes
   address: Bytes
   addr: Bytes
   contentHash: Bytes
