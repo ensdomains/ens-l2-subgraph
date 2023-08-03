@@ -69,7 +69,7 @@ export function handleAddrChanged(event: AddrChangedEvent): void {
     event.transaction.hash.concatI32(event.logIndex.toI32())
   )
   log.warning("*** handleAddrChanged2, {}", [event.params.node.toHexString()])
-  let resolver = createResolver(
+  let resolver = getOrCreateResolver(
     event.params.node,
     event.params.context,
     event.address,
@@ -116,7 +116,7 @@ export function handleAddressChanged(event: AddressChangedEvent): void {
   entity.blockTimestamp = event.block.timestamp
   entity.transactionHash = event.transaction.hash
   entity.save()
-  let resolver = createResolver(
+  let resolver = getOrCreateResolver(
     event.params.node,
     event.params.context,
     event.address,
@@ -144,7 +144,7 @@ export function handleAddressChanged(event: AddressChangedEvent): void {
 }
 
 export function handleTextChanged(event: TextChangedEvent): void {
-  log.warning("*** handleTextChanged", [])
+  log.warning("*** handleTextChanged1", [])
   let node = event.params.node.toHexString();
   let entity = new TextChanged(
     event.transaction.hash.concatI32(event.logIndex.toI32())
@@ -161,16 +161,18 @@ export function handleTextChanged(event: TextChangedEvent): void {
 
   entity.save()
 
-  let resolver = createResolver(
+  let resolver = getOrCreateResolver(
     event.params.node,
     event.params.context,
     event.address,
   )
   let key = event.params.key;
   if(resolver.texts == null) {
+    log.warning("*** handleTextChanged1", [])
     resolver.texts = [key];
     resolver.save();
   } else {
+    log.warning("*** handleTextChanged2", [])
     let texts = resolver.texts!
     if(!texts.includes(key)){
       texts.push(key)
@@ -187,13 +189,15 @@ export function handleTextChanged(event: TextChangedEvent): void {
   domain.save()
 }
 
-function createResolver(node: Bytes, context: Bytes, address: Address): Resolver{
-  let resolver = new Resolver(
-    createResolverID(node, context, address)
-  );
-  resolver.context = context
-  resolver.address = address;
-  return resolver
+function getOrCreateResolver(node: Bytes, context: Bytes, address: Address): Resolver {
+  let id = createResolverID(node, context, address);
+  let resolver = Resolver.load(id);
+  if (resolver === null) {
+    resolver = new Resolver(id);
+    resolver.domain = node.toHexString();
+    resolver.address = address;
+  }
+  return resolver as Resolver;
 }
 
 function createDomain(node: Bytes, context: Bytes, resolverId: string = ''): Domain{
