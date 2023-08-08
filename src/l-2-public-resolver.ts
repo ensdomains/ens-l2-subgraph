@@ -9,8 +9,7 @@ import {
   AddressChanged,
   TextChanged,
   Resolver,
-  Domain,
-  Offchain
+  Domain
 } from "../generated/schema"
 import { Address, BigInt, Bytes, crypto, log } from '@graphprotocol/graph-ts'
 import {
@@ -189,18 +188,6 @@ function createDomain(node: Bytes, context: Bytes, resolverId: string = ''): Dom
   domain.namehash = node;
   if(resolverId != ''){
     domain.resolver = resolverId;
-  }
-  if(domain.offchain == null){
-    // Dervied via convertEVMChainIdToCoinType at https://github.com/ensdomains/address-encoder
-    let offchainId = 2147488648
-    let offchain = new Offchain(offchainId.toString());
-    if(offchain.name == null){
-      offchain.name = "Mantle"
-      offchain.chainId = BigInt.fromI32(5000)
-      offchain.isEVM = true
-    }
-    domain.offchain = offchain.id;
-    offchain.save()
   }
   domain.save()
 

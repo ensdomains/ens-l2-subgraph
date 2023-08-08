@@ -7,7 +7,6 @@ type Domain @entity {
   resolvedAddress: Bytes
   parent: Domain
   subdomains: [Domain!]! @derivedFrom(field: "parent") # Can count domains from length of array
-  offchain: Offchain
   resolver: Resolver
   expiryDate: BigInt
 }
@@ -57,11 +56,4 @@ type TextChanged @entity(immutable: true) {
   blockNumber: BigInt!
   blockTimestamp: BigInt!
   transactionHash: Bytes!
-}
-
-type Offchain @entity(immutable: true) {
-  id: ID! # Id of the Chain (either ChainID or SLIP44 if non evm chain)
-  chainId: BigInt # from https://chainlist.org
-  name: String # Name of the Chain
-  isEVM: Boolean # True/False
 }
