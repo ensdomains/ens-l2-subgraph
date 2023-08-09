@@ -1,5 +1,6 @@
 type Domain @entity {
   id: ID! # context-namehash
+  context: Bytes
   name: String
   namehash: Bytes
   labelName: String

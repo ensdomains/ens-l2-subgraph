@@ -209,6 +209,8 @@ function getOrCreateResolver(node: Bytes, context: Bytes, address: Address): Res
   if (resolver === null) {
     resolver = new Resolver(id);
     resolver.domain = node.toHexString();
+    resolver.node = node;
+    resolver.context = context;
     resolver.address = address;
   }
   return resolver as Resolver;
@@ -219,6 +221,7 @@ function createDomain(node: Bytes, context: Bytes, resolverId: string = ''): Dom
   domain.namehash = node;
   if(resolverId != ''){
     domain.resolver = resolverId;
+    domain.context = context;
   }
   domain.save()
 
