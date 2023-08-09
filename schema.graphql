@@ -57,3 +57,15 @@ type TextChanged @entity(immutable: true) {
   blockTimestamp: BigInt!
   transactionHash: Bytes!
 }
+
+type ContenthashChanged @entity(immutable: true) {
+  id: Bytes!
+  context: Bytes! # bytes32
+  name: Bytes! # bytes32
+  node: Bytes! # bytes32
+  indexedKey: String # string
+  hash: Bytes!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}

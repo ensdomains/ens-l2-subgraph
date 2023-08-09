@@ -2,11 +2,13 @@ import {
   AddrChanged as AddrChangedEvent,
   AddressChanged as AddressChangedEvent,
   TextChanged as TextChangedEvent,
+  ContenthashChanged as ContenthashChangedEvent
 } from "../generated/L2PublicResolver/L2PublicResolver"
 
 import {
   AddrChanged,
   AddressChanged,
+  ContenthashChanged,
   TextChanged,
   Resolver,
   Domain
@@ -163,6 +165,35 @@ export function handleTextChanged(event: TextChangedEvent): void {
       resolver.save()
     }
   }
+  resolver.save();
+  let domain = createDomain(
+    event.params.node,
+    event.params.context,
+    resolver.id
+  )
+  domain.save()
+}
+
+export function handleContentHashChanged(event: ContenthashChangedEvent): void {
+  let entity = new ContenthashChanged(
+    event.transaction.hash.concatI32(event.logIndex.toI32())
+  )
+  handleName(event.params.node, event.params.context, event.params.name)
+  entity.node = event.params.node
+  entity.context = event.params.context
+  entity.name = event.params.name
+  entity.hash = event.params.hash
+  entity.blockNumber = event.block.number
+  entity.blockTimestamp = event.block.timestamp
+  entity.transactionHash = event.transaction.hash
+  entity.save()
+
+  let resolver = getOrCreateResolver(
+    event.params.node,
+    event.params.context,
+    event.address,
+  )
+  resolver.contentHash = event.params.hash;
   resolver.save();
   let domain = createDomain(
     event.params.node,
