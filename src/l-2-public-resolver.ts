@@ -48,21 +48,25 @@ export function handleApproved(event: ApprovedEvent): void {
   let domainId = createDomainID(node, context);
   let domain = Domain.load(domainId);
   if(domain){
+    let delegateAccount = Account.load(delegate.toHexString());
+    if(!delegateAccount){
+      delegateAccount = new Account(delegate.toHexString());
+    }
     if(domain.delegates == null) {
       if(approved === true){
-        domain.delegates = [delegate];
+        domain.delegates = [delegateAccount.id];
         domain.save();  
       }
     } else {
       let delegates = domain.delegates!
       if(approved === true){
-        if(!delegates.includes(delegate)){
-          delegates.push(delegate)
+        if(!delegates.includes(delegateAccount.id)){        
+          delegates.push(delegateAccount.id)
           domain.delegates = delegates
           domain.save()
         }  
       }else{
-        const index = delegates.indexOf(delegate)
+        const index = delegates.indexOf(delegateAccount.id)
         if(index >= 0){
           // Remove delegation
           delegates.splice(index, 1)
@@ -71,6 +75,7 @@ export function handleApproved(event: ApprovedEvent): void {
         }  
       }
     }
+    delegateAccount.save()
   }
 }
 
