@@ -8,6 +8,7 @@ type Domain @entity {
   resolvedAddress: Bytes
   parent: Domain
   subdomains: [Domain!]! @derivedFrom(field: "parent") # Can count domains from length of array
+  owner: Account
   delegates: [Bytes!]
   resolver: Resolver
   expiryDate: BigInt
@@ -34,6 +35,13 @@ type AddrChanged @entity(immutable: true) {
   blockNumber: BigInt!
   blockTimestamp: BigInt!
   transactionHash: Bytes!
+}
+
+type Account @entity {
+  "The unique identifier for the account"
+  id: ID!
+  "The domains under the context of the account"
+  contexts: [Domain!]! @derivedFrom(field: "owner")
 }
 
 type AddressChanged @entity(immutable: true) {

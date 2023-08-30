@@ -13,7 +13,8 @@ import {
   TextChanged,
   Approved,
   Resolver,
-  Domain
+  Domain,
+  Account
 } from "../generated/schema"
 import { Address, BigInt, Bytes, crypto, log } from '@graphprotocol/graph-ts'
 import {
@@ -275,8 +276,13 @@ function createDomain(node: Bytes, context: Bytes, resolverId: string = ''): Dom
     domain.resolver = resolverId;
     domain.context = context;
   }
+  let account = Account.load(context.toHexString());
+  if(!account){
+    account = new Account(context.toHexString());
+  }
+  domain.owner = account.id;
   domain.save()
-
+  account.save()
   return domain
 }
 
