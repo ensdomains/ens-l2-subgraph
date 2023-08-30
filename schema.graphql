@@ -1,5 +1,6 @@
 type Domain @entity {
   id: ID! # context-namehash
+  context: Bytes
   name: String
   namehash: Bytes
   labelName: String
@@ -7,7 +8,8 @@ type Domain @entity {
   resolvedAddress: Bytes
   parent: Domain
   subdomains: [Domain!]! @derivedFrom(field: "parent") # Can count domains from length of array
-  offchain: Offchain
+  owner: Account
+  delegates: [Account!]
   resolver: Resolver
   expiryDate: BigInt
 }
@@ -22,6 +24,14 @@ type Resolver @entity {
   contentHash: Bytes
   texts: [String!]
   coinTypes: [BigInt!]
+}
+
+type Account @entity {
+  "The unique identifier for the account"
+  id: ID!
+  "The domains under the context of the account"
+  contexts: [Domain!]! @derivedFrom(field: "owner")
+  delegated: [Domain!]! @derivedFrom(field: "delegates")
 }
 
 type AddrChanged @entity(immutable: true) {
@@ -59,9 +69,26 @@ type TextChanged @entity(immutable: true) {
   transactionHash: Bytes!
 }
 
-type Offchain @entity(immutable: true) {
-  id: ID! # Id of the Chain (either ChainID or SLIP44 if non evm chain)
-  chainId: BigInt # from https://chainlist.org
-  name: String # Name of the Chain
-  isEVM: Boolean # True/False
+type ContenthashChanged @entity(immutable: true) {
+  id: Bytes!
+  context: Bytes! # bytes32
+  name: Bytes! # bytes32
+  node: Bytes! # bytes32
+  indexedKey: String # string
+  hash: Bytes!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type Approved @entity(immutable: true) {
+  id: Bytes!
+  context: Bytes # bytes32
+  name: Bytes # bytes32
+  node: Bytes # bytes32
+  delegate: Bytes! # address
+  approved: Boolean! # boolean
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
 }

@@ -2,16 +2,19 @@ import {
   AddrChanged as AddrChangedEvent,
   AddressChanged as AddressChangedEvent,
   TextChanged as TextChangedEvent,
-  // NameSet as NameSetEvent
+  ContenthashChanged as ContenthashChangedEvent,
+  Approved as ApprovedEvent
 } from "../generated/L2PublicResolver/L2PublicResolver"
 
 import {
   AddrChanged,
   AddressChanged,
+  ContenthashChanged,
   TextChanged,
+  Approved,
   Resolver,
   Domain,
-  Offchain
+  Account
 } from "../generated/schema"
 import { Address, BigInt, Bytes, crypto, log } from '@graphprotocol/graph-ts'
 import {
@@ -21,13 +24,67 @@ import {
   encodeHex
 } from './utils'
 
+export function handleApproved(event: ApprovedEvent): void {
+  let entity = new Approved(
+    event.transaction.hash.concatI32(event.logIndex.toI32())
+  )
+  let context = event.params.context
+  let name = event.params.name
+  let node = namehash(event.params.name)
+  let delegate = event.params.delegate
+  let approved = event.params.approved
+
+  entity.context = context
+  entity.name = name
+  entity.node = node
+  entity.delegate = delegate
+  entity.approved = approved
+
+  entity.blockNumber = event.block.number
+  entity.blockTimestamp = event.block.timestamp
+  entity.transactionHash = event.transaction.hash
+  entity.save()
+  handleName(node, context, name)
+  let domainId = createDomainID(node, context);
+  let domain = Domain.load(domainId);
+  if(domain){
+    let delegateAccount = Account.load(delegate.toHexString());
+    if(!delegateAccount){
+      delegateAccount = new Account(delegate.toHexString());
+    }
+    if(domain.delegates == null) {
+      if(approved === true){
+        domain.delegates = [delegateAccount.id];
+        domain.save();  
+      }
+    } else {
+      let delegates = domain.delegates!
+      if(approved === true){
+        if(!delegates.includes(delegateAccount.id)){        
+          delegates.push(delegateAccount.id)
+          domain.delegates = delegates
+          domain.save()
+        }  
+      }else{
+        const index = delegates.indexOf(delegateAccount.id)
+        if(index >= 0){
+          // Remove delegation
+          delegates.splice(index, 1)
+          domain.delegates = delegates
+          domain.save()
+        }  
+      }
+    }
+    delegateAccount.save()
+  }
+}
+
 export function handleName(node:Bytes, context:Bytes, dnsName:Bytes): void { 
   let domainId = createDomainID(node, context);
   let domain = Domain.load(domainId);
   if(!domain){
     domain = new Domain(domainId)
   }
-  log.warning("*** handleName1 {}", [domainId])
   let decoded = decodeName(dnsName)
   if(decoded){    
     let labelName = decoded[0]
@@ -36,7 +93,6 @@ export function handleName(node:Bytes, context:Bytes, dnsName:Bytes): void {
     let name = decoded ? decoded[1] : ''
     let parentEncoded = decoded ? decoded[3] : ''
     let parentNode = namehash(Bytes.fromHexString(parentEncoded))
-    log.warning("*** handleName2 {}", [name])
     domain.name = name
     domain.labelName = labelName
     domain.labelhash = Bytes.fromHexString(labelhash)
@@ -64,31 +120,25 @@ export function handleName(node:Bytes, context:Bytes, dnsName:Bytes): void {
 }
 
 export function handleAddrChanged(event: AddrChangedEvent): void {
-  log.warning("*** handleAddrChanged1", [])
   let entity = new AddrChanged(
     event.transaction.hash.concatI32(event.logIndex.toI32())
   )
-  log.warning("*** handleAddrChanged2, {}", [event.params.node.toHexString()])
   let resolver = getOrCreateResolver(
     event.params.node,
     event.params.context,
     event.address,
   )
-  log.warning("*** handleAddrChanged3", [])
   resolver.addr = event.params.a;
   resolver.domain = createDomainID(event.params.node, event.params.context)
   resolver.save();
-  log.warning("*** handleAddrChanged4", [])
   let domain = createDomain(
     event.params.node,
     event.params.context,
     resolver.id
   )
-  log.warning("*** handleAddrChanged5", [])
   domain.resolvedAddress = event.params.a;
   domain.save()
   handleName(event.params.node, event.params.context, event.params.name)
-  log.warning("*** handleAddrChanged5.1", [])
   entity.context = event.params.context
   entity.name = event.params.name
   entity.node = event.params.node
@@ -97,13 +147,10 @@ export function handleAddrChanged(event: AddrChangedEvent): void {
   entity.blockNumber = event.block.number
   entity.blockTimestamp = event.block.timestamp
   entity.transactionHash = event.transaction.hash
-  log.warning("*** handleAddrChanged6", [])
   entity.save()
-  log.warning("*** handleAddrChanged7", [])
 }
 
 export function handleAddressChanged(event: AddressChangedEvent): void {
-  log.warning("*** handleAddressChanged", [])
   let entity = new AddressChanged(
     event.transaction.hash.concatI32(event.logIndex.toI32())
   )
@@ -144,8 +191,6 @@ export function handleAddressChanged(event: AddressChangedEvent): void {
 }
 
 export function handleTextChanged(event: TextChangedEvent): void {
-  log.warning("*** handleTextChanged1", [])
-  let node = event.params.node.toHexString();
   let entity = new TextChanged(
     event.transaction.hash.concatI32(event.logIndex.toI32())
   )
@@ -168,11 +213,9 @@ export function handleTextChanged(event: TextChangedEvent): void {
   )
   let key = event.params.key;
   if(resolver.texts == null) {
-    log.warning("*** handleTextChanged1", [])
     resolver.texts = [key];
     resolver.save();
   } else {
-    log.warning("*** handleTextChanged2", [])
     let texts = resolver.texts!
     if(!texts.includes(key)){
       texts.push(key)
@@ -189,12 +232,43 @@ export function handleTextChanged(event: TextChangedEvent): void {
   domain.save()
 }
 
+export function handleContentHashChanged(event: ContenthashChangedEvent): void {
+  let entity = new ContenthashChanged(
+    event.transaction.hash.concatI32(event.logIndex.toI32())
+  )
+  handleName(event.params.node, event.params.context, event.params.name)
+  entity.node = event.params.node
+  entity.context = event.params.context
+  entity.name = event.params.name
+  entity.hash = event.params.hash
+  entity.blockNumber = event.block.number
+  entity.blockTimestamp = event.block.timestamp
+  entity.transactionHash = event.transaction.hash
+  entity.save()
+
+  let resolver = getOrCreateResolver(
+    event.params.node,
+    event.params.context,
+    event.address,
+  )
+  resolver.contentHash = event.params.hash;
+  resolver.save();
+  let domain = createDomain(
+    event.params.node,
+    event.params.context,
+    resolver.id
+  )
+  domain.save()
+}
+
 function getOrCreateResolver(node: Bytes, context: Bytes, address: Address): Resolver {
   let id = createResolverID(node, context, address);
   let resolver = Resolver.load(id);
   if (resolver === null) {
     resolver = new Resolver(id);
     resolver.domain = node.toHexString();
+    resolver.node = node;
+    resolver.context = context;
     resolver.address = address;
   }
   return resolver as Resolver;
@@ -205,21 +279,15 @@ function createDomain(node: Bytes, context: Bytes, resolverId: string = ''): Dom
   domain.namehash = node;
   if(resolverId != ''){
     domain.resolver = resolverId;
+    domain.context = context;
   }
-  if(domain.offchain == null){
-    // Dervied via convertEVMChainIdToCoinType at https://github.com/ensdomains/address-encoder
-    let offchainId = 2147488648
-    let offchain = new Offchain(offchainId.toString());
-    if(offchain.name == null){
-      offchain.name = "Mantle"
-      offchain.chainId = BigInt.fromI32(5000)
-      offchain.isEVM = true
-    }
-    domain.offchain = offchain.id;
-    offchain.save()
+  let account = Account.load(context.toHexString());
+  if(!account){
+    account = new Account(context.toHexString());
   }
+  domain.owner = account.id;
   domain.save()
-
+  account.save()
   return domain
 }
 
