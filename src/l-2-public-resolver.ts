@@ -2,7 +2,8 @@ import {
   AddrChanged as AddrChangedEvent,
   AddressChanged as AddressChangedEvent,
   TextChanged as TextChangedEvent,
-  ContenthashChanged as ContenthashChangedEvent
+  ContenthashChanged as ContenthashChangedEvent,
+  Approved as ApprovedEvent
 } from "../generated/L2PublicResolver/L2PublicResolver"
 
 import {
@@ -10,6 +11,7 @@ import {
   AddressChanged,
   ContenthashChanged,
   TextChanged,
+  Approved,
   Resolver,
   Domain
 } from "../generated/schema"
@@ -20,6 +22,56 @@ import {
   byteArrayFromHex,
   encodeHex
 } from './utils'
+
+export function handleApproved(event: ApprovedEvent): void {
+  let entity = new Approved(
+    event.transaction.hash.concatI32(event.logIndex.toI32())
+  )
+  let context = event.params.context
+  let name = event.params.name
+  let node = namehash(event.params.name)
+  let delegate = event.params.delegate
+  let approved = event.params.approved
+
+  entity.context = context
+  entity.name = name
+  entity.node = node
+  entity.delegate = delegate
+  entity.approved = approved
+
+  entity.blockNumber = event.block.number
+  entity.blockTimestamp = event.block.timestamp
+  entity.transactionHash = event.transaction.hash
+  entity.save()
+  handleName(node, context, name)
+  let domainId = createDomainID(node, context);
+  let domain = Domain.load(domainId);
+  if(domain){
+    if(domain.delegates == null) {
+      if(approved === true){
+        domain.delegates = [delegate];
+        domain.save();  
+      }
+    } else {
+      let delegates = domain.delegates!
+      if(approved === true){
+        if(!delegates.includes(delegate)){
+          delegates.push(delegate)
+          domain.delegates = delegates
+          domain.save()
+        }  
+      }else{
+        const index = delegates.indexOf(delegate)
+        if(index >= 0){
+          // Remove delegation
+          delegates.splice(index, 1)
+          domain.delegates = delegates
+          domain.save()
+        }  
+      }
+    }
+  }
+}
 
 export function handleName(node:Bytes, context:Bytes, dnsName:Bytes): void { 
   let domainId = createDomainID(node, context);

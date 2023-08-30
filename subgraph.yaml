@@ -27,5 +27,7 @@ dataSources:
           handler: handleTextChanged
         - event: ContenthashChanged(bytes,bytes,indexed bytes32,bytes)
           handler: handleContentHashChanged
+        - event: Approved(bytes,bytes,indexed address,indexed bool)
+          handler: handleApproved
 
       file: ./src/l-2-public-resolver.ts

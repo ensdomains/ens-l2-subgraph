@@ -8,6 +8,7 @@ type Domain @entity {
   resolvedAddress: Bytes
   parent: Domain
   subdomains: [Domain!]! @derivedFrom(field: "parent") # Can count domains from length of array
+  delegates: [Bytes!]
   resolver: Resolver
   expiryDate: BigInt
 }
@@ -66,6 +67,18 @@ type ContenthashChanged @entity(immutable: true) {
   node: Bytes! # bytes32
   indexedKey: String # string
   hash: Bytes!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type Approved @entity(immutable: true) {
+  id: Bytes!
+  context: Bytes # bytes32
+  name: Bytes # bytes32
+  node: Bytes # bytes32
+  delegate: Bytes! # address
+  approved: Boolean! # boolean
   blockNumber: BigInt!
   blockTimestamp: BigInt!
   transactionHash: Bytes!
