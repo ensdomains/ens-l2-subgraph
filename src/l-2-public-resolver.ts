@@ -2,7 +2,8 @@ import {
   AddrChanged as AddrChangedEvent,
   AddressChanged as AddressChangedEvent,
   TextChanged as TextChangedEvent,
-  ContenthashChanged as ContenthashChangedEvent
+  ContenthashChanged as ContenthashChangedEvent,
+  Approved as ApprovedEvent
 } from "../generated/L2PublicResolver/L2PublicResolver"
 
 import {
@@ -10,8 +11,10 @@ import {
   AddressChanged,
   ContenthashChanged,
   TextChanged,
+  Approved,
   Resolver,
-  Domain
+  Domain,
+  Account
 } from "../generated/schema"
 import { Address, BigInt, Bytes, crypto, log } from '@graphprotocol/graph-ts'
 import {
@@ -20,6 +23,61 @@ import {
   byteArrayFromHex,
   encodeHex
 } from './utils'
+
+export function handleApproved(event: ApprovedEvent): void {
+  let entity = new Approved(
+    event.transaction.hash.concatI32(event.logIndex.toI32())
+  )
+  let context = event.params.context
+  let name = event.params.name
+  let node = namehash(event.params.name)
+  let delegate = event.params.delegate
+  let approved = event.params.approved
+
+  entity.context = context
+  entity.name = name
+  entity.node = node
+  entity.delegate = delegate
+  entity.approved = approved
+
+  entity.blockNumber = event.block.number
+  entity.blockTimestamp = event.block.timestamp
+  entity.transactionHash = event.transaction.hash
+  entity.save()
+  handleName(node, context, name)
+  let domainId = createDomainID(node, context);
+  let domain = Domain.load(domainId);
+  if(domain){
+    let delegateAccount = Account.load(delegate.toHexString());
+    if(!delegateAccount){
+      delegateAccount = new Account(delegate.toHexString());
+    }
+    if(domain.delegates == null) {
+      if(approved === true){
+        domain.delegates = [delegateAccount.id];
+        domain.save();  
+      }
+    } else {
+      let delegates = domain.delegates!
+      if(approved === true){
+        if(!delegates.includes(delegateAccount.id)){        
+          delegates.push(delegateAccount.id)
+          domain.delegates = delegates
+          domain.save()
+        }  
+      }else{
+        const index = delegates.indexOf(delegateAccount.id)
+        if(index >= 0){
+          // Remove delegation
+          delegates.splice(index, 1)
+          domain.delegates = delegates
+          domain.save()
+        }  
+      }
+    }
+    delegateAccount.save()
+  }
+}
 
 export function handleName(node:Bytes, context:Bytes, dnsName:Bytes): void { 
   let domainId = createDomainID(node, context);
@@ -223,8 +281,13 @@ function createDomain(node: Bytes, context: Bytes, resolverId: string = ''): Dom
     domain.resolver = resolverId;
     domain.context = context;
   }
+  let account = Account.load(context.toHexString());
+  if(!account){
+    account = new Account(context.toHexString());
+  }
+  domain.owner = account.id;
   domain.save()
-
+  account.save()
   return domain
 }
 
